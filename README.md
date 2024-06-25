@@ -1,1 +1,3 @@
 # KeyStore
+
+keytool -genkey -v -keystore /Users/navazapple/Documents/vasundhara/android/app/key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias key
