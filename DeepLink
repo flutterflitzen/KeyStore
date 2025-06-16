@@ -1,0 +1,997 @@
+Perfect! I've updated the implementation to use the latest app_links: ^6.4.0 package instead of the deprecated uni_links. Here are the key improvements in the updated code:
+Key Changes with app_links Package:
+1. Modern API Usage
+
+Uses AppLinks() class instead of static functions
+getInitialLink() returns Uri? instead of String?
+uriLinkStream provides Uri objects directly
+
+2. Better Error Handling
+
+Enhanced error handling with try-catch blocks
+Proper logging with debugPrint
+Error callbacks for better user feedback
+
+3. Improved URL Parsing
+
+Direct Uri object handling (no need to parse strings)
+More robust parameter extraction
+Support for multiple URL formats:
+
+https://new.hiogolf.com/checkpost?24
+https://new.hiogolf.com/checkpost?id=24
+https://new.hiogolf.com/checkpost?checkpost_id=24
+
+
+
+4. Enhanced UI
+
+Loading states during initialization
+Better error feedback with SnackBars
+Improved visual design with icons and styling
+Test button for easy development
+
+Main Advantages of app_links:
+
+Active Maintenance: Still actively maintained and updated
+Better Performance: More efficient URI handling
+Enhanced Features: Better iOS and Android integration
+Future-Proof: Will receive continued updates and support
+
+Testing the Implementation:
+
+Development Testing:
+bashflutter run
+# Use the test button in the app
+
+ADB Testing (Android):
+bashadb shell am start -W -a android.intent.action.VIEW \
+-d "https://new.hiogolf.com/checkpost?24" \
+com.yourpackage.name
+
+QR Code Testing:
+
+Generate QR with: https://new.hiogolf.com/checkpost?24
+Scan with device camera
+Should open your app directly
+
+
+
+The rest of the Android and iOS configuration remains the same. The updated code is more robust, handles errors better, and provides a smoother user experience with the latest Flutter deep linking practices.RetryClaude does not have the ability to run the code it generates yet.NS
+
+
+# Flutter Deep Linking Implementation Guide
+
+## Overview
+This guide will help you implement deep linking so that QR codes with URLs like `https://new.hiogolf.com/checkpost?24` will open your Flutter app directly if installed, otherwise redirect to browser.
+
+## Step 1: Add Required Dependencies
+
+Add these dependencies to your `pubspec.yaml`:
+
+```yaml
+dependencies:
+  flutter:
+    sdk: flutter
+  app_links: ^6.4.0
+  url_launcher: ^6.1.14
+
+dev_dependencies:
+  flutter_lints: ^2.0.0
+```
+
+Run: `flutter pub get`
+
+## Step 2: Android Configuration
+
+### 2.1 Configure Android Manifest
+
+Edit `android/app/src/main/AndroidManifest.xml`:
+
+```xml
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application
+        android:label="your_app_name"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher">
+        
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+            
+            <!-- Standard App Launch -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            
+            <!-- Deep Link Intent Filter -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https"
+                      android:host="new.hiogolf.com"
+                      android:pathPrefix="/checkpost" />
+            </intent-filter>
+            
+            <!-- Custom URL Scheme (Optional backup) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="hiogolf" />
+            </intent-filter>
+            
+            <meta-data
+              android:name="io.flutter.embedding.android.NormalTheme"
+              android:resource="@style/NormalTheme"
+              />
+        </activity>
+        
+        <meta-data
+            android:name="io.flutter.embedding.android.SplashScreenDrawable"
+            android:resource="@drawable/launch_background"
+            />
+        <meta-data
+            android:name="io.flutter.embedding.android.SplashScreenUntilFirstFrame"
+            android:value="true" />
+    </application>
+</manifest>
+```
+
+### 2.2 Add Internet Permission
+
+Also in `android/app/src/main/AndroidManifest.xml`, add this before `<application>`:
+
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
+```
+
+## Step 3: iOS Configuration
+
+### 3.1 Configure Info.plist
+
+Edit `ios/Runner/Info.plist`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Your existing keys -->
+    
+    <!-- Add URL Schemes -->
+    <key>CFBundleURLTypes</key>
+    <array>
+        <!-- HTTPS Deep Links -->
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>hiogolf.deeplink</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>https</string>
+            </array>
+        </dict>
+        <!-- Custom Scheme (Optional backup) -->
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>hiogolf.custom</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>hiogolf</string>
+            </array>
+        </dict>
+    </array>
+    
+    <!-- Associated Domains for Universal Links -->
+    <key>com.apple.developer.associated-domains</key>
+    <array>
+        <string>applinks:new.hiogolf.com</string>
+    </array>
+    
+</dict>
+</plist>
+```
+
+### 3.2 Add Associated Domains Capability
+
+1. Open your iOS project in Xcode: `ios/Runner.xcworkspace`
+2. Select your app target
+3. Go to "Signing & Capabilities" tab
+4. Click "+ Capability" and add "Associated Domains"
+5. Add domain: `applinks:new.hiogolf.com`
+
+## Step 4: Server-Side Configuration
+
+### 4.1 Create Apple App Site Association File
+
+Create a file named `apple-app-site-association` (no extension) on your server at:
+`https://new.hiogolf.com/.well-known/apple-app-site-association`
+
+```json
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID.com.yourcompany.yourapp",
+        "paths": ["/checkpost*"]
+      }
+    ]
+  }
+}
+```
+
+Replace `TEAMID.com.yourcompany.yourapp` with your actual App ID.
+
+### 4.2 Create Android Asset Links File
+
+Create `assetlinks.json` at:
+`https://new.hiogolf.com/.well-known/assetlinks.json`
+
+```json
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.yourcompany.yourapp",
+      "sha256_cert_fingerprints": ["YOUR_SHA256_FINGERPRINT"]
+    }
+  }
+]
+```
+
+Replace with your actual package name and SHA256 fingerprint.
+
+## Step 5: Flutter Implementation
+
+### 5.1 Create Deep Link Service
+
+Create `lib/services/deep_link_service.dart`:
+
+```dart
+import 'dart:async';
+import 'package:app_links/app_links.dart';
+import 'package:flutter/services.dart';
+
+class DeepLinkService {
+  static late AppLinks _appLinks;
+  static StreamSubscription<Uri>? _linkSubscription;
+  static Function(String)? _onLinkReceived;
+
+  static Future<void> initialize(Function(String) onLinkReceived) async {
+    _onLinkReceived = onLinkReceived;
+    _appLinks = AppLinks();
+    
+    // Handle app launch from deep link
+    await _handleInitialLink();
+    
+    // Handle app resume from deep link
+    _handleIncomingLinks();
+  }
+
+  // Handle app launch from deep link when app is closed
+  static Future<void> _handleInitialLink() async {
+    try {
+      final uri = await _appLinks.getInitialLink();
+      if (uri != null) {
+        _processLink(uri);
+      }
+    } on PlatformException catch (e) {
+      print('Failed to get initial link: ${e.message}');
+    } catch (e) {
+      print('Failed to get initial link: $e');
+    }
+  }
+
+  // Handle app resume from deep link when app is in background
+  static void _handleIncomingLinks() {
+    _linkSubscription = _appLinks.uriLinkStream.listen(
+      (Uri uri) {
+        _processLink(uri);
+      },
+      onError: (err) {
+        print('Deep link error: $err');
+      },
+    );
+  }
+
+  static void _processLink(Uri uri) {
+    print('Received deep link: $uri');
+    
+    // Check if it's our target URL
+    if (uri.host == 'new.hiogolf.com' && uri.path == '/checkpost') {
+      String? checkpostId;
+      
+      // Extract the parameter from URL
+      // Handle different URL formats:
+      // https://new.hiogolf.com/checkpost?24
+      // https://new.hiogolf.com/checkpost?id=24
+      
+      if (uri.query.isNotEmpty) {
+        if (uri.queryParameters.isEmpty) {
+          // Direct number format: ?24
+          checkpostId = uri.query;
+        } else {
+          // Key-value format: ?id=24 or first parameter
+          checkpostId = uri.queryParameters['id'] ?? 
+                       uri.queryParameters.values.first;
+        }
+      }
+      
+      if (checkpostId != null && checkpostId.isNotEmpty) {
+        _onLinkReceived?.call(checkpostId);
+      }
+    }
+  }
+
+  // Check if app can handle the link
+  static Future<bool> canHandleLink(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      return uri.host == 'new.hiogolf.com' && uri.path == '/checkpost';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  static void dispose() {
+    _linkSubscription?.cancel();
+  }
+}
+```
+
+### 5.2 Update Main App
+
+Update your `lib/main.dart`:
+
+```dart
+import 'package:flutter/material.dart';
+import 'services/deep_link_service.dart';
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatefulWidget {
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  String? _receivedCheckpostId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _initializeDeepLinks();
+  }
+
+  Future<void> _initializeDeepLinks() async {
+    await DeepLinkService.initialize((checkpostId) {
+      setState(() {
+        _receivedCheckpostId = checkpostId;
+      });
+      
+      // Navigate to specific screen based on checkpost ID
+      _handleCheckpostNavigation(checkpostId);
+    });
+  }
+
+  void _handleCheckpostNavigation(String checkpostId) {
+    // Navigate to your specific screen
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      navigatorKey.currentState?.pushNamed(
+        '/checkpost',
+        arguments: checkpostId,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    DeepLinkService.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'HioGolf App',
+      navigatorKey: navigatorKey,
+      initialRoute: '/',
+      routes: {
+        '/': (context) => HomeScreen(),
+        '/checkpost': (context) => CheckpostScreen(),
+      },
+    );
+  }
+}
+
+class HomeScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('HioGolf Home')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Welcome to HioGolf App'),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/checkpost', arguments: '24');
+              },
+              child: Text('Test Checkpost Screen'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class CheckpostScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final checkpostId = ModalRoute.of(context)?.settings.arguments as String?;
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Checkpost'),
+        backgroundColor: Colors.blue,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.qr_code_scanner,
+              size: 100,
+              color: Colors.blue,
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Checkpost Screen',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 10),
+            if (checkpostId != null)
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Text(
+                  'Checkpost ID: $checkpostId',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.blue.shade800,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text('Back to Home'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+## Step 6: Testing Deep Links
+
+### 6.1 Test on Android
+
+1. Install your app on device
+2. Open terminal/command prompt
+3. Run: `adb shell am start -W -a android.intent.action.VIEW -d "https://new.hiogolf.com/checkpost?24" com.yourpackage.name`
+
+### 6.2 Test on iOS
+
+1. Install your app on device
+2. Open Notes app
+3. Type: `https://new.hiogolf.com/checkpost?24`
+4. Tap the link
+
+### 6.3 Test with QR Code
+
+1. Generate QR code with: `https://new.hiogolf.com/checkpost?24`
+2. Scan with device camera
+3. Should prompt to open with your app
+
+## Step 7: Advanced Implementation with Error Handling
+
+### 7.1 Enhanced Deep Link Service
+
+Here's an enhanced version with better error handling and logging:
+
+```dart
+import 'dart:async';
+import 'package:app_links/app_links.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+class DeepLinkService {
+  static late AppLinks _appLinks;
+  static StreamSubscription<Uri>? _linkSubscription;
+  static Function(String)? _onLinkReceived;
+  static Function(String)? _onError;
+
+  static Future<void> initialize({
+    required Function(String) onLinkReceived,
+    Function(String)? onError,
+  }) async {
+    _onLinkReceived = onLinkReceived;
+    _onError = onError;
+    _appLinks = AppLinks();
+    
+    try {
+      // Handle app launch from deep link
+      await _handleInitialLink();
+      
+      // Handle app resume from deep link
+      _handleIncomingLinks();
+      
+      debugPrint('DeepLinkService initialized successfully');
+    } catch (e) {
+      debugPrint('Failed to initialize DeepLinkService: $e');
+      _onError?.call('Failed to initialize deep linking: $e');
+    }
+  }
+
+  static Future<void> _handleInitialLink() async {
+    try {
+      final uri = await _appLinks.getInitialLink();
+      if (uri != null) {
+        debugPrint('Initial link found: $uri');
+        _processLink(uri);
+      } else {
+        debugPrint('No initial link found');
+      }
+    } on PlatformException catch (e) {
+      debugPrint('PlatformException getting initial link: ${e.message}');
+      _onError?.call('Platform error: ${e.message}');
+    } catch (e) {
+      debugPrint('Error getting initial link: $e');
+      _onError?.call('Error getting initial link: $e');
+    }
+  }
+
+  static void _handleIncomingLinks() {
+    _linkSubscription = _appLinks.uriLinkStream.listen(
+      (Uri uri) {
+        debugPrint('Incoming link: $uri');
+        _processLink(uri);
+      },
+      onError: (err) {
+        debugPrint('Deep link stream error: $err');
+        _onError?.call('Link stream error: $err');
+      },
+    );
+  }
+
+  static void _processLink(Uri uri) {
+    try {
+      debugPrint('Processing link: $uri');
+      debugPrint('Host: ${uri.host}, Path: ${uri.path}, Query: ${uri.query}');
+      
+      // Check if it's our target URL
+      if (uri.host == 'new.hiogolf.com' && uri.path == '/checkpost') {
+        String? checkpostId = _extractCheckpostId(uri);
+        
+        if (checkpostId != null && checkpostId.isNotEmpty) {
+          debugPrint('Extracted checkpost ID: $checkpostId');
+          _onLinkReceived?.call(checkpostId);
+        } else {
+          debugPrint('No valid checkpost ID found in URL');
+          _onError?.call('Invalid checkpost URL - no ID found');
+        }
+      } else {
+        debugPrint('URL does not match expected pattern');
+        _onError?.call('URL does not match expected pattern');
+      }
+    } catch (e) {
+      debugPrint('Error processing link: $e');
+      _onError?.call('Error processing link: $e');
+    }
+  }
+
+  static String? _extractCheckpostId(Uri uri) {
+    // Handle different URL formats:
+    // https://new.hiogolf.com/checkpost?24
+    // https://new.hiogolf.com/checkpost?id=24
+    // https://new.hiogolf.com/checkpost?checkpost_id=24
+    
+    if (uri.query.isNotEmpty) {
+      // Try direct number format first: ?24
+      if (uri.queryParameters.isEmpty && RegExp(r'^\d+
+
+## Step 8: Build and Deploy
+
+### 8.1 Android Build
+
+```bash
+flutter build apk --release
+# or
+flutter build appbundle --release
+```
+
+### 8.2 iOS Build
+
+```bash
+flutter build ios --release
+```
+
+## Important Notes
+
+1. **App Store/Play Store**: Deep links only work with apps installed from official stores or properly signed debug builds
+2. **Testing**: Use `flutter run` for development testing
+3. **Server Files**: Ensure `.well-known` files are accessible via HTTPS
+4. **Package Name**: Use consistent package names across all configurations
+5. **Certificates**: For Android, use your release certificate fingerprint for production
+
+## Troubleshooting
+
+- **Links not working**: Check server configuration and app signatures
+- **App not opening**: Verify intent filters and URL schemes
+- **iOS issues**: Ensure Associated Domains capability is properly configured
+- **Android issues**: Check `android:autoVerify="true"` and asset links
+
+This implementation will handle your QR code URLs and open your app directly when installed, or fall back to browser when not installed.).hasMatch(uri.query)) {
+        return uri.query;
+      }
+      
+      // Try key-value formats
+      final params = uri.queryParameters;
+      return params['id'] ?? 
+             params['checkpost_id'] ?? 
+             params['checkpostId'] ??
+             (params.values.isNotEmpty ? params.values.first : null);
+    }
+    
+    return null;
+  }
+
+  static Future<bool> canHandleLink(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      return uri.host == 'new.hiogolf.com' && uri.path == '/checkpost';
+    } catch (e) {
+      debugPrint('Error checking if can handle link: $e');
+      return false;
+    }
+  }
+
+  static void dispose() {
+    _linkSubscription?.cancel();
+    debugPrint('DeepLinkService disposed');
+  }
+}
+```
+
+### 7.2 Complete Main App with Error Handling
+
+```dart
+import 'package:flutter/material.dart';
+import 'services/deep_link_service.dart';
+
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatefulWidget {
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = 
+      GlobalKey<ScaffoldMessengerState>();
+  
+  String? _receivedCheckpostId;
+  bool _isInitializing = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _initializeDeepLinks();
+  }
+
+  Future<void> _initializeDeepLinks() async {
+    try {
+      await DeepLinkService.initialize(
+        onLinkReceived: (checkpostId) {
+          setState(() {
+            _receivedCheckpostId = checkpostId;
+          });
+          _handleCheckpostNavigation(checkpostId);
+        },
+        onError: (error) {
+          _showError('Deep Link Error: $error');
+        },
+      );
+    } catch (e) {
+      _showError('Failed to initialize deep linking: $e');
+    } finally {
+      setState(() {
+        _isInitializing = false;
+      });
+    }
+  }
+
+  void _handleCheckpostNavigation(String checkpostId) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (navigatorKey.currentState != null) {
+        navigatorKey.currentState!.pushNamed(
+          '/checkpost',
+          arguments: checkpostId,
+        );
+      }
+    });
+  }
+
+  void _showError(String message) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 5),
+        ),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    DeepLinkService.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'HioGolf App',
+      navigatorKey: navigatorKey,
+      scaffoldMessengerKey: scaffoldMessengerKey,
+      initialRoute: '/',
+      routes: {
+        '/': (context) => HomeScreen(isInitializing: _isInitializing),
+        '/checkpost': (context) => CheckpostScreen(),
+      },
+    );
+  }
+}
+
+class HomeScreen extends StatelessWidget {
+  final bool isInitializing;
+  
+  const HomeScreen({Key? key, required this.isInitializing}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('HioGolf Home'),
+        backgroundColor: Colors.green,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isInitializing)
+              Column(
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Initializing deep links...'),
+                  SizedBox(height: 32),
+                ],
+              ),
+            Icon(
+              Icons.golf_course,
+              size: 100,
+              color: Colors.green,
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Welcome to HioGolf App',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Scan QR codes to access checkposts directly!',
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 40),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(context, '/checkpost', arguments: '24');
+              },
+              icon: Icon(Icons.qr_code_scanner),
+              label: Text('Test Checkpost Screen'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class CheckpostScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final checkpostId = ModalRoute.of(context)?.settings.arguments as String?;
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Checkpost Details'),
+        backgroundColor: Colors.blue,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.location_on,
+              size: 100,
+              color: Colors.blue,
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Checkpost Screen',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 20),
+            if (checkpostId != null)
+              Container(
+                padding: EdgeInsets.all(20),
+                margin: EdgeInsets.symmetric(horizontal: 40),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.shade200, width: 2),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Checkpost ID',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.blue.shade600,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      checkpostId,
+                      style: TextStyle(
+                        fontSize: 28,
+                        color: Colors.blue.shade800,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Container(
+                padding: EdgeInsets.all(20),
+                margin: EdgeInsets.symmetric(horizontal: 40),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.shade200, width: 2),
+                ),
+                child: Text(
+                  'No Checkpost ID provided',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.orange.shade800,
+                  ),
+                ),
+              ),
+            SizedBox(height: 40),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              icon: Icon(Icons.arrow_back),
+              label: Text('Back to Home'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+## Step 8: Build and Deploy
+
+### 8.1 Android Build
+
+```bash
+flutter build apk --release
+# or
+flutter build appbundle --release
+```
+
+### 8.2 iOS Build
+
+```bash
+flutter build ios --release
+```
+
+## Important Notes
+
+1. **App Store/Play Store**: Deep links only work with apps installed from official stores or properly signed debug builds
+2. **Testing**: Use `flutter run` for development testing
+3. **Server Files**: Ensure `.well-known` files are accessible via HTTPS
+4. **Package Name**: Use consistent package names across all configurations
+5. **Certificates**: For Android, use your release certificate fingerprint for production
+
+## Troubleshooting
+
+- **Links not working**: Check server configuration and app signatures
+- **App not opening**: Verify intent filters and URL schemes
+- **iOS issues**: Ensure Associated Domains capability is properly configured
+- **Android issues**: Check `android:autoVerify="true"` and asset links
+
+This implementation will handle your QR code URLs and open your app directly when installed, or fall back to browser when not installed.
+
+
+
+
+
+
+
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.hiogolf.app",
+      "sha256_cert_fingerprints": [
+        "YOUR_FIRST_SHA256_KEY",
+        "YOUR_SECOND_SHA256_KEY", 
+        "YOUR_THIRD_SHA256_KEY"
+      ]
+    }
+  }
+]
